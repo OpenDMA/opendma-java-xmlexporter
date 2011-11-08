@@ -264,12 +264,17 @@ public class XMLExporter
     
     public void dumpObject(PrintStream out, OdmaObject obj) throws Exception
     {
+        exportQueue.remove(obj.getId().toString());
+        if(exportedObjects.containsKey(obj.getId().toString()))
+        {
+            System.out.println("WARNING: tried to export an already exported object: "+obj.getId().toString());
+            return;
+        }
         if(verbose >= 2)
         {
             System.out.println("    > "+obj.getId());
         }
         exportedObjects.put(obj.getId().toString(), null);
-        exportQueue.remove(obj.getId().toString());
         LinkedHashMap<String,OdmaObject> nonRetrievableObjects = new LinkedHashMap<String,OdmaObject>();
         out.println("    <OdmaObject classQualifier=\""+obj.getOdmaClass().getNameQualifier()+"\" className=\""+obj.getOdmaClass().getName()+"\">");
         OdmaPropertyInfoEnumeration props = obj.getOdmaClass().getProperties();
@@ -295,15 +300,22 @@ public class XMLExporter
             }
         }
         out.println("    </OdmaObject>");
+        obj = null;
         while(nonRetrievableObjects.size() > 0)
         {
             Entry<String,OdmaObject> nroEntry = nonRetrievableObjects.entrySet().iterator().next();
             OdmaObject volObj = nroEntry.getValue();
+            nonRetrievableObjects.remove(nroEntry.getKey());
+            if(exportedObjects.containsKey(volObj.getId().toString()))
+            {
+                System.out.println("WARNING: tried to export an already exported object: "+volObj.getId().toString());
+                return;
+            }
             if(verbose >= 2)
             {
                 System.out.println("    >> "+volObj.getId()+" ("+volObj.getOdmaClass().getQName()+")");
             }
-            nonRetrievableObjects.remove(nroEntry.getKey());
+            exportedObjects.put(volObj.getId().toString(), null);
             out.println("    <OdmaObject classQualifier=\""+volObj.getOdmaClass().getNameQualifier()+"\" className=\""+volObj.getOdmaClass().getName()+"\">");
             props = volObj.getOdmaClass().getProperties();
             if(props != null)
