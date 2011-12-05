@@ -334,7 +334,7 @@ public class XMLExporter
                     }
                     catch(Exception e)
                     {
-                        System.out.println("----> Error dumping property "+pi.getQName()+" of non-retrievable object "+obj.getId());
+                        System.out.println("----> Error dumping property "+pi.getQName()+" of non-retrievable object "+volObj.getId());
                         e.printStackTrace(System.out);
                     }
                 }
