@@ -64,6 +64,7 @@ public class XMLExporter
             System.out.println("                      Session.password=password");
             System.out.println("Repository          : The ID of the repository to be exported");
             System.out.println("ExcludeClasses      : blank separated list of classnames to be excluded from export");
+            System.out.println("ExcludeIds          : blank separated list of IDs of objects to be excluded from export");
             System.out.println("Outfile             : The file where the XML export is written to. Default is OpenDMA.xml");
             System.out.println("ContentDirectory    : The directory where data files are written to. Only if ExportContent=true. Default is 'data'");
             System.out.println("ExportContent       : true/false Export also Content. Default is false");
@@ -103,6 +104,8 @@ public class XMLExporter
     protected String repositoryId = null;
     
     protected List<Pattern> excludeClasses = new ArrayList<Pattern>();
+    
+    protected List<String> excludeIds = new ArrayList<String>();
     
     protected String outfile = null;
     
@@ -153,6 +156,15 @@ public class XMLExporter
             for(String patternString : excludeClassesList)
             {
                 excludeClasses.add(Pattern.compile(patternString));
+            }
+        }
+        String excludeIdsConfig = props.getProperty("ExcludeIds");
+        if(excludeIdsConfig != null)
+        {
+            String[] excludeIdsList = excludeIdsConfig.split(" ");
+            for(String excludedId : excludeIdsList)
+            {
+                excludeIds.add(excludedId);
             }
         }
         outfile = props.getProperty("Outfile","OpenDMA.xml");
@@ -566,6 +578,11 @@ public class XMLExporter
 
     protected boolean isReferenceExported(OdmaObject referencedObject)
     {
+        String id = referencedObject.getId().toString();
+        if(excludeIds.contains(id))
+        {
+            return false;
+        }
         String classQName = referencedObject.getOdmaClass().getQName().toString();
         for(int i = 0; i < excludeClasses.size(); i++)
         {
@@ -637,10 +654,13 @@ public class XMLExporter
         {
             if(verbose > 0)
             {
-                System.out.println("Exporting class "+cls.getQName());
+                System.out.println("Processing class "+cls.getQName());
             }
-            // dump this class
-            dumpObject(out,cls);
+            // write this Class if it has not yet been exported. If the class is not retrievable, it might already have been written with a referencing object
+            if(!exportedObjects.containsKey(cls.getId().toString()))
+            {
+                dumpObject(out,cls);
+            }
             // dump declared properties
             OdmaPropertyInfoEnumeration props = cls.getDeclaredProperties();
             Iterator<?> it = props.iterator();
@@ -649,9 +669,13 @@ public class XMLExporter
                 OdmaPropertyInfo pi = (OdmaPropertyInfo)it.next();
                 if(verbose > 0)
                 {
-                    System.out.println("    Exporting property "+pi.getQName());
+                    System.out.println("    Processing property "+pi.getQName());
                 }
-                dumpObject(out,pi);
+                // write this PropertyInfo if it has not yet been exported. If the class is not retrievable, it might already have been written with a referencing object
+                if(!exportedObjects.containsKey(pi.getId().toString()))
+                {
+                    dumpObject(out,pi);
+                }
             }
         }
         // dump sub classes
