@@ -318,6 +318,10 @@ public class XMLExporter
             Entry<String,OdmaObject> nroEntry = nonRetrievableObjects.entrySet().iterator().next();
             OdmaObject volObj = nroEntry.getValue();
             nonRetrievableObjects.remove(nroEntry.getKey());
+            if(exportQueue.containsKey(volObj.getId().toString()))
+            {
+                System.out.println("WARNING: ID of non-retrieval object has been found in the export queue. This is an indicator for duplicate IDs in the repository.");
+            }
             if(exportedObjects.containsKey(volObj.getId().toString()))
             {
                 System.out.println("WARNING: tried to export an already exported object: "+volObj.getId().toString());
