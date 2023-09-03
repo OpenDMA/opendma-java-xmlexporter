@@ -8,6 +8,6 @@
 	</classpathentry>
 	<classpathentry combineaccessrules="false" kind="src" path="/OpenDMA Adaptor Filenet"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/OpenDMA Adaptor Manager"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/OpenDMA API 0.6.0"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/OpenDMA API 0.6.1"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
