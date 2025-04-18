@@ -21,8 +21,6 @@ import java.util.Properties;
 import java.util.regex.Pattern;
 
 import org.opendma.AdaptorManager;
-import org.opendma.OdmaSession;
-import org.opendma.OdmaTypes;
 import org.opendma.api.OdmaClass;
 import org.opendma.api.OdmaContent;
 import org.opendma.api.OdmaId;
@@ -31,23 +29,22 @@ import org.opendma.api.OdmaProperty;
 import org.opendma.api.OdmaPropertyInfo;
 import org.opendma.api.OdmaQName;
 import org.opendma.api.OdmaRepository;
-import org.opendma.api.collections.OdmaClassEnumeration;
-import org.opendma.api.collections.OdmaObjectEnumeration;
-import org.opendma.api.collections.OdmaPropertyInfoEnumeration;
+import org.opendma.api.OdmaSession;
+import org.opendma.api.OdmaType;
 import org.opendma.exceptions.OdmaObjectNotFoundException;
 
 public class XMLExporter
 {
 
     /**
-     * The main method so this class can be used as stand-alone concole application.
+     * The main method so this class can be used as stand-alone console application.
      * 
      * @param args The command line arguments
      */
     public static void main(String[] args)
     {
-        System.out.println("OpenDMA XML Exporter version 0.6.0");
-        System.out.println("Copyright (c) 2011 xaldon Technologies GmbH");
+        System.out.println("OpenDMA XML Exporter version 0.7.0");
+        System.out.println("Copyright (c) 2011-2025 xaldon Technologies GmbH");
         if(args.length != 1)
         {
             System.out.println();
@@ -257,7 +254,7 @@ public class XMLExporter
             }
             try
             {
-                OdmaObject refObj = session.getObject(new OdmaId(repositoryId), new OdmaId(e.getKey()), e.getValue(), null);
+                OdmaObject refObj = session.getObject(new OdmaId(repositoryId), new OdmaId(e.getKey()), null);
                 dumpObject(out,refObj);
             }
             catch(OdmaObjectNotFoundException onfe)
@@ -288,8 +285,8 @@ public class XMLExporter
         }
         exportedObjects.put(obj.getId().toString(), null);
         LinkedHashMap<String,OdmaObject> nonRetrievableObjects = new LinkedHashMap<String,OdmaObject>();
-        out.println("    <OdmaObject classQualifier=\""+obj.getOdmaClass().getNameQualifier()+"\" className=\""+obj.getOdmaClass().getName()+"\">");
-        OdmaPropertyInfoEnumeration props = obj.getOdmaClass().getProperties();
+        out.println("    <OdmaObject classNamespace=\""+obj.getOdmaClass().getNamespace()+"\" className=\""+obj.getOdmaClass().getName()+"\">");
+        Iterable<OdmaPropertyInfo> props = obj.getOdmaClass().getProperties();
         if(props != null)
         {
             Iterator<?> it = props.iterator();
@@ -332,7 +329,7 @@ public class XMLExporter
                 System.out.println("    >> "+volObj.getId()+" ("+volObj.getOdmaClass().getQName()+")");
             }
             exportedObjects.put(volObj.getId().toString(), null);
-            out.println("    <OdmaObject classQualifier=\""+volObj.getOdmaClass().getNameQualifier()+"\" className=\""+volObj.getOdmaClass().getName()+"\">");
+            out.println("    <OdmaObject classNamespace=\""+volObj.getOdmaClass().getNamespace()+"\" className=\""+volObj.getOdmaClass().getName()+"\">");
             props = volObj.getOdmaClass().getProperties();
             if(props != null)
             {
@@ -361,7 +358,7 @@ public class XMLExporter
     
     public void dumpProperty(PrintStream out, OdmaPropertyInfo pi, OdmaObject obj, LinkedHashMap<String,OdmaObject> nonRetrievableObjects) throws Exception
     {
-        if(pi.getDataType() == OdmaTypes.TYPE_GUID)
+        if(pi.getDataType() == OdmaType.GUID.getNumericId())
         {
             return;
         }
@@ -370,7 +367,7 @@ public class XMLExporter
         {
             throw new RuntimeException("no data type for "+pi.getDataType());
         }
-        out.print("        <Property qualifier=\""+pi.getNameQualifier()+"\" name=\""+pi.getName()+"\" type=\""+typeName+"\" multiValue=\""+(pi.getMultiValue().booleanValue()?"true":"false")+"\">");
+        out.print("        <Property namespace=\""+pi.getNamespace()+"\" name=\""+pi.getName()+"\" type=\""+typeName+"\" multiValue=\""+(pi.isMultiValue()?"true":"false")+"\">");
         try
         {
             OdmaProperty prop = obj.getProperty(pi.getQName());
@@ -398,16 +395,16 @@ public class XMLExporter
     
     public void dumpPropertyMultivalue(PrintStream out, OdmaProperty prop, LinkedHashMap<String,OdmaObject> nonRetrievableObjects) throws Exception
     {
-        if(prop.getType() == OdmaTypes.TYPE_REFERENCE)
+        if(prop.getType() == OdmaType.REFERENCE)
         {
-            OdmaObjectEnumeration objEnum = (OdmaObjectEnumeration)prop.getValue();
+            Iterable<? extends OdmaObject> objEnum = prop.getReferenceIterable();
             if(objEnum != null)
             {
-                Iterator<?> itObjectEnum = objEnum.iterator();
+                Iterator<? extends OdmaObject> itObjectEnum = objEnum.iterator();
                 while(itObjectEnum.hasNext())
                 {
-                    OdmaObject odmaObj = (OdmaObject)itObjectEnum.next();
-                    dumpPropertyValueObject(out,odmaObj,OdmaTypes.TYPE_REFERENCE,prop.getName(),nonRetrievableObjects);
+                    OdmaObject odmaObj = itObjectEnum.next();
+                    dumpPropertyValueObject(out,odmaObj,OdmaType.REFERENCE,prop.getName(),nonRetrievableObjects);
                 }
             }
         }
@@ -431,64 +428,64 @@ public class XMLExporter
         {
             return;
         }
-        int type = prop.getType();
+        OdmaType type = prop.getType();
         dumpPropertyValueObject(out,valueObj,type,prop.getName(),nonRetrievableObjects);
     }
     
-    public void dumpPropertyValueObject(PrintStream out, Object value, int type, OdmaQName propQName, LinkedHashMap<String,OdmaObject> nonRetrievableObjects)
+    public void dumpPropertyValueObject(PrintStream out, Object value, OdmaType type, OdmaQName propQName, LinkedHashMap<String,OdmaObject> nonRetrievableObjects)
     {
         switch(type)
         {
-        case OdmaTypes.TYPE_STRING:
+        case STRING:
             out.print("<Value>");
             dumpXMLString(out,(String)value);
             out.print("</Value>");
             break;
-        case OdmaTypes.TYPE_INTEGER:
+        case INTEGER:
             out.print("<Value>");
             out.print(value.toString());
             out.print("</Value>");
             break;
-        case OdmaTypes.TYPE_SHORT:
+        case SHORT:
             out.print("<Value>");
             out.print(value.toString());
             out.print("</Value>");
             break;
-        case OdmaTypes.TYPE_LONG:
+        case LONG:
             out.print("<Value>");
             out.print(value.toString());
             out.print("</Value>");
             break;
-        case OdmaTypes.TYPE_FLOAT:
+        case FLOAT:
             out.print("<Value>");
             out.print(value.toString());
             out.print("</Value>");
             break;
-        case OdmaTypes.TYPE_DOUBLE:
+        case DOUBLE:
             out.print("<Value>");
             out.print(value.toString());
             out.print("</Value>");
             break;
-        case OdmaTypes.TYPE_BOOLEAN:
+        case BOOLEAN:
             out.print("<Value>");
             out.print(((Boolean)value).booleanValue() ? "true" : "false");
             out.print("</Value>");
             break;
-        case OdmaTypes.TYPE_DATETIME:
+        case DATETIME:
             out.print("<Value>");
             out.print(dateTimeFormat.format((Date)value));
             out.print("</Value>");
             break;
-        case OdmaTypes.TYPE_BLOB:
+        case BLOB:
             out.print("<Value>");
             out.print(Base64Coder.encode((byte[])value));
             out.print("</Value>");
             break;
-        case OdmaTypes.TYPE_REFERENCE:
+        case REFERENCE:
             OdmaObject referencedObject = (OdmaObject)value;
             OdmaClass referencedObjectClass = referencedObject.getOdmaClass();
             String referencedObjectId = referencedObject.getId().toString();
-            if(referencedObjectClass.getNameQualifier().equals("opendma"))
+            if(referencedObjectClass.getNamespace().equals("opendma"))
             {
                 // we can reference all OpenDMA classes without the need to export the referenced class
                 out.print("<Value>");
@@ -522,7 +519,7 @@ public class XMLExporter
                 out.print("</Value>");
             }
             break;
-        case OdmaTypes.TYPE_CONTENT:
+        case CONTENT:
             if(exportContent)
             {
                 String filename = contentDirectory+"/content"+Integer.toString(this.exportetContentIdCounter++)+".dat";
@@ -568,12 +565,12 @@ public class XMLExporter
                 out.print("</Value>");
             }
             break;
-        case OdmaTypes.TYPE_ID:
+        case ID:
             out.print("<Value>");
             out.print(((OdmaId)value).toString());
             out.print("</Value>");
             break;
-        case OdmaTypes.TYPE_GUID:
+        case GUID:
             throw new RuntimeException("GUID propertys should have been omited. Property: "+propQName);
         default:
             throw new RuntimeException("Unhandled property type "+type);
@@ -629,7 +626,7 @@ public class XMLExporter
 
     protected boolean isNotRetrievable(OdmaObject referencedObject)
     {
-        return !referencedObject.getOdmaClass().getRetrievable().booleanValue();
+        return !referencedObject.getOdmaClass().isRetrievable();
     }
     
     protected static DateFormat dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -654,7 +651,7 @@ public class XMLExporter
 
     private void dumpClassTreeIter(PrintStream out, OdmaClass cls) throws Exception
     {
-        if(!cls.getNameQualifier().equals("opendma"))
+        if(!cls.getNamespace().equals("opendma"))
         {
             if(verbose > 0)
             {
@@ -666,11 +663,8 @@ public class XMLExporter
                 dumpObject(out,cls);
             }
             // dump declared properties
-            OdmaPropertyInfoEnumeration props = cls.getDeclaredProperties();
-            Iterator<?> it = props.iterator();
-            while(it.hasNext())
+            for(OdmaPropertyInfo pi : cls.getDeclaredProperties())
             {
-                OdmaPropertyInfo pi = (OdmaPropertyInfo)it.next();
                 if(verbose > 0)
                 {
                     System.out.println("    Processing property "+pi.getQName());
@@ -683,11 +677,8 @@ public class XMLExporter
             }
         }
         // dump sub classes
-        OdmaClassEnumeration subClasses = cls.getSubClasses();
-        Iterator<?> itSubClasses = subClasses.iterator();
-        while(itSubClasses.hasNext())
+        for(OdmaClass subClass : cls.getSubClasses())
         {
-            OdmaClass subClass = (OdmaClass)itSubClasses.next();
             dumpClassTreeIter(out,subClass);
         }
     }
