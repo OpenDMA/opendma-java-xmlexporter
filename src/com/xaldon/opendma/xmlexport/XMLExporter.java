@@ -7,7 +7,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -18,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.TimeZone;
 import java.util.regex.Pattern;
 
 import org.opendma.AdaptorManager;
@@ -473,7 +473,7 @@ public class XMLExporter
             break;
         case DATETIME:
             out.print("<Value>");
-            out.print(dateTimeFormat.format((Date)value));
+            out.print(DATETIME_FORMAT.get().format((Date)value));
             out.print("</Value>");
             break;
         case BLOB:
@@ -629,8 +629,15 @@ public class XMLExporter
         return !referencedObject.getOdmaClass().isRetrievable();
     }
     
-    protected static DateFormat dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
+    private static final ThreadLocal<SimpleDateFormat> DATETIME_FORMAT = new ThreadLocal<SimpleDateFormat>() {
+        @Override protected SimpleDateFormat initialValue() {
+            SimpleDateFormat result = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+            result.setTimeZone(TimeZone.getTimeZone("UTC"));
+            result.setLenient(false);
+            return result;
+        }
+    };
+    
     protected static Map<Integer, String> datatypeValues = new HashMap<Integer, String>();
     
     static
