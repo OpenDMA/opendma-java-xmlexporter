@@ -20,7 +20,8 @@ import java.util.Properties;
 import java.util.TimeZone;
 import java.util.regex.Pattern;
 
-import org.opendma.AdaptorManager;
+import org.opendma.api.OdmaAdaptor;
+import org.opendma.api.OdmaAdaptorDiscovery;
 import org.opendma.api.OdmaClass;
 import org.opendma.api.OdmaContent;
 import org.opendma.api.OdmaId;
@@ -53,7 +54,6 @@ public class XMLExporter
             System.out.println("The properties file contains a key-value list defining the source and target of this export.");
             System.out.println("Possible keys are:");
             System.out.println("SystemProperty.xxxx : Will be set as Java system property xxxx befor Export");
-            System.out.println("AdaptorClass        : The exporter will try to register an OpenDMA Adaptor from this class");
             System.out.println("AdaptorSystemId     : The system ID of the Adaptor to be used");
             System.out.println("Session.xxxx        : Set property xxxx for session setup");
             System.out.println("                      Most adaptors require at least these session properties:");
@@ -75,13 +75,13 @@ public class XMLExporter
         }
         catch(FileNotFoundException e)
         {
-            System.out.println("Properties file '"+args[0]+"' can not be found.");
+            System.err.println("Properties file '"+args[0]+"' can not be found.");
             System.exit(1);
         }
         catch (IOException e)
         {
-            System.out.println("Error reading properties file '"+args[0]+"':");
-            e.printStackTrace(System.out);
+            System.err.println("Error reading properties file '"+args[0]+"':");
+            e.printStackTrace(System.err);
             System.exit(1);
         }
         try
@@ -91,10 +91,12 @@ public class XMLExporter
         }
         catch(Exception e)
         {
-            System.out.println("Error performing Export:");
-            e.printStackTrace(System.out);
+            System.err.println("Error performing Export:");
+            e.printStackTrace(System.err);
         }
     }
+    
+    protected String adaptorSystemId = null;
     
     protected Properties sessionProperties = new Properties();
     
@@ -145,6 +147,11 @@ public class XMLExporter
             }
         }
         // configure from properties
+        adaptorSystemId = props.getProperty("AdaptorSystemId");
+        if(adaptorSystemId == null)
+        {
+            throw new IllegalArgumentException("Missing AdaptorSystemId.");
+        }
         repositoryId = props.getProperty("Repository","");
         String excludeClassesConfig = props.getProperty("ExcludeClasses");
         if(excludeClassesConfig != null)
@@ -194,18 +201,18 @@ public class XMLExporter
                 throw new IllegalArgumentException("Invalid value for Verbose. Possible values are 0,1,2");
             }
         }
-        // try to load the OpenDMA adaptor
-        String adaptorClassName = props.getProperty("AdaptorClass");
-        if(adaptorClassName != null)
-        {
-            Class.forName(adaptorClassName);
-        }
     }
     
     public void runExport() throws Exception
     {
         // establish session
-        OdmaSession session = AdaptorManager.getSession(sessionProperties);
+        OdmaAdaptorDiscovery adaptorDiscovery = new OdmaAdaptorDiscovery();
+        OdmaAdaptor adaptor = adaptorDiscovery.getAdaptor(adaptorSystemId);
+        if(adaptor == null)
+        {
+            throw new IllegalArgumentException("No OpenDMA  Adaptor available on classpath for systemId: "+adaptorSystemId);
+        }
+        OdmaSession session = adaptor.connect(sessionProperties);
         // get the repository to be exported
         OdmaRepository repo = session.getRepository(new OdmaId(repositoryId));
         // create output file
