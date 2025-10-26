@@ -483,7 +483,7 @@ public class XMLExporter
             out.print(DATETIME_FORMAT.get().format((Date)value));
             out.print("</Value>");
             break;
-        case BLOB:
+        case BINARY:
             out.print("<Value>");
             out.print(Base64Coder.encode((byte[])value));
             out.print("</Value>");
