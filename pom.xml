@@ -18,9 +18,9 @@
     </properties>
 
     <scm>
-        <url>https://github.com/OpenDMA/opendma-java-xmlexporter</url>
         <connection>scm:git:git://github.com/OpenDMA/opendma-java-xmlexporter.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/OpenDMA/opendma-java-xmlexporter.git</developerConnection>
+        <url>https://github.com/OpenDMA/opendma-java-xmlexporter</url>
         <tag>HEAD</tag>
     </scm>
 
@@ -44,6 +44,19 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
+
+    <developers>
+        <developer>
+            <name>Stefan Kopf</name>
+            <organization>xaldon Technologies GmbH</organization>
+            <organizationUrl>https://www.xaldon.com</organizationUrl>
+        </developer>
+        <developer>
+            <name>OpenDMA Contributors</name>
+            <organization>OpenDMA</organization>
+            <organizationUrl>https://www.opendma.org</organizationUrl>
+        </developer>
+    </developers>
 
     <build>
         <plugins>
