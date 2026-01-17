@@ -5,7 +5,7 @@
 
     <groupId>org.opendma</groupId>
     <artifactId>opendma-xmlexporter</artifactId>
-    <version>0.8</version>
+    <version>0.9-SNAPSHOT</version>
     <name>OpenDMA XML Exporter</name>
     <description>Exports (parts of) an OpemDMA Repository as XML file</description>
     <url>https://opendma.org</url>
@@ -21,7 +21,7 @@
         <connection>scm:git:git://github.com/OpenDMA/opendma-java-xmlexporter.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/OpenDMA/opendma-java-xmlexporter.git</developerConnection>
         <url>https://github.com/OpenDMA/opendma-java-xmlexporter</url>
-        <tag>0.8</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <issueManagement>
